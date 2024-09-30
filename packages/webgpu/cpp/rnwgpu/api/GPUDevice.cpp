@@ -12,7 +12,9 @@ std::shared_ptr<GPUBuffer>
 GPUDevice::createBuffer(std::shared_ptr<GPUBufferDescriptor> descriptor) {
   wgpu::BufferDescriptor desc;
   Convertor conv;
-  if (!conv(desc, descriptor)) {
+  if (!conv(desc.label, descriptor->label) ||
+      !conv(desc.mappedAtCreation, descriptor->mappedAtCreation) ||
+      !conv(desc.size, descriptor->size) || !conv(desc.usage, descriptor->usage)) {
     throw std::runtime_error(
         "GPUDevice::createBuffer(): Error with GPUBufferDescriptor");
   }
@@ -50,8 +52,12 @@ std::shared_ptr<GPUCommandEncoder> GPUDevice::createCommandEncoder(
 void GPUDevice::destroy() {
   _instance.Destroy();
   auto lostInfo = std::make_shared<GPUDeviceLostInfo>(
-      wgpu::DeviceLostReason::Destroyed, "device was destroyed");
-  m_lostPromise->set_value(lostInfo);
+        wgpu::DeviceLostReason::Destroyed, "device was destroyed");
+  try {
+    m_lostPromise->set_value(lostInfo);
+  } catch (const std::exception& e) {
+    //
+  }
 }
 
 std::shared_ptr<GPUTexture>
